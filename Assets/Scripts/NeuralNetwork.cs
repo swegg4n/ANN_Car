@@ -9,7 +9,7 @@ public class NeuralNetwork : System.IComparable<NeuralNetwork>
     private float[][] biases;
     private float[][][] weights;
 
-    public float Fitness { get; private set; } = 0;
+    public int Fitness { get; set; } = 0;
 
     private const float e = 2.71828f;
 
