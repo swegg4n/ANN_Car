@@ -7,7 +7,8 @@ public class CarController : MonoBehaviour
     private Transform[] sensors;
     private const float SENSOR_RANGE = 5.0f;
 
-    private const float MAX_MOVE_SPEED = 0.05f;
+    private const float MAX_MOVE_SPEED_FWD = 0.05f;
+    private const float MAX_MOVE_SPEED_BACK = 0.02f;
     private const float MAX_TURN_SPEED = 1.5f;
     private Rigidbody rb;
 
@@ -65,7 +66,8 @@ public class CarController : MonoBehaviour
 
     private void Move(float speed)
     {
-        rb.MovePosition(transform.position + transform.forward * speed * MAX_MOVE_SPEED);
+        float maxMoveSpeed = (speed > 0) ? MAX_MOVE_SPEED_FWD : MAX_MOVE_SPEED_BACK;
+        rb.MovePosition(transform.position + transform.forward * speed * maxMoveSpeed);
     }
 
     public void Turn(float turning)
