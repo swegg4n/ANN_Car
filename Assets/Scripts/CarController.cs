@@ -1,11 +1,13 @@
 using UnityEngine;
 using UnityEditor;
+using System.Diagnostics;
 
 [RequireComponent(typeof(Rigidbody))]
 public class CarController : MonoBehaviour
 {
     private Transform[] sensors;
     private const float SENSOR_RANGE = 5.0f;
+    [SerializeField] private LayerMask sensorMask;
 
     private const float MAX_MOVE_SPEED_FWD = 0.05f;
     private const float MAX_MOVE_SPEED_BACK = 0.02f;
@@ -15,19 +17,22 @@ public class CarController : MonoBehaviour
 
     public NeuralNetwork Network { private get; set; }
 
-    public int checkpoints { private get; set; }
+    public int checkpoints { private get; set; } = 1;
+    private Stopwatch stopWatch = new Stopwatch();
 
-    private bool collided = false;
+    public bool Collided { get; private set; } = false;
 
 
 
     private void Awake()
     {
-        sensors = new Transform[transform.childCount];
+        sensors = new Transform[transform.childCount - 1];
         for (int i = 0; i < sensors.Length; i++)
             sensors[i] = transform.GetChild(i);
 
         rb = GetComponent<Rigidbody>();
+
+        stopWatch.Restart();
     }
 
 
@@ -37,7 +42,7 @@ public class CarController : MonoBehaviour
         for (int i = 0; i < sensors.Length; i++)
         {
             RaycastHit hit;
-            if (Physics.Raycast(sensors[i].position, sensors[i].forward, out hit, SENSOR_RANGE))
+            if (Physics.Raycast(sensors[i].position, sensors[i].forward, out hit, SENSOR_RANGE, sensorMask))
             {
                 sensorValues[i] = 1.0f - hit.distance / SENSOR_RANGE;
             }
@@ -52,18 +57,20 @@ public class CarController : MonoBehaviour
 
     public void SetFitness()
     {
-        Network.Fitness = checkpoints;
+        Network.Fitness = checkpoints * (float)stopWatch.Elapsed.TotalSeconds;
     }
 
 
     private void FixedUpdate()
     {
-        if (!collided)
+        if (!Collided)
         {
             float[] output = Network.FeedForward(GetSensorValues());
 
-            Move(output[0]);
-            Turn(output[0], output[1]);
+            Move(1.0f);
+            Turn(1.0f, output[0]);
+
+            SetFitness();
         }
     }
 
@@ -78,17 +85,21 @@ public class CarController : MonoBehaviour
         rb.MoveRotation(rb.rotation * Quaternion.AngleAxis(turning * MAX_TURN_SPEED * speed, Vector3.up));
     }
 
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.gameObject.layer == LayerMask.NameToLayer("CheckPoint"))
+        {
+            ++checkpoints;
+        }
+    }
 
 
     private void OnCollisionEnter(Collision collision)
     {
-        if (collision.collider.gameObject.layer == LayerMask.NameToLayer("CheckPoint"))
+        if (collision.collider.gameObject.layer != LayerMask.NameToLayer("Ground"))
         {
-            ++checkpoints;
-        }
-        else if (collision.collider.gameObject.layer != LayerMask.NameToLayer("Ground"))
-        {
-            collided = true;
+            Collided = true;
+            StartCoroutine(CarsManager.Instance.NextGeneration());
         }
     }
 
@@ -123,6 +134,9 @@ public class CarController : MonoBehaviour
                         Handles.Label(hitPoint, sensorValues[i].ToString());
                 }
             }
+
+            if (DebugManager.Instance.DebugFitness)
+                Handles.Label(transform.position, $"Fitness: {Network.Fitness}");
         }
         catch (System.Exception) { }
 

@@ -14,8 +14,10 @@ public class DebugManager : MonoBehaviour
 
 
     [SerializeField] private bool debugRays = true;
-    [SerializeField] private bool debugDistances = true;
+    [SerializeField] private bool debugDistances = false;
+    [SerializeField] private bool debugFitness = true;
 
     public bool DebugRays { get { return debugRays; } }
     public bool DebugDistances { get { return debugDistances; } }
+    public bool DebugFitness { get { return debugFitness; } }
 }

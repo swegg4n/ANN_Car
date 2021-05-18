@@ -9,7 +9,7 @@ public class NeuralNetwork : System.IComparable<NeuralNetwork>
     private float[][] biases;
     private float[][][] weights;
 
-    public int Fitness { get; set; } = 0;
+    public float Fitness { get; set; } = 0.0f;
 
     private const float e = 2.71828f;
 
@@ -79,7 +79,7 @@ public class NeuralNetwork : System.IComparable<NeuralNetwork>
 
     public float Activate(float x)
     {
-        return 1.0f / (1 + Mathf.Pow(e, -x));
+        return (float)System.Math.Tanh(x);
     }
 
 
@@ -106,13 +106,13 @@ public class NeuralNetwork : System.IComparable<NeuralNetwork>
     }
 
 
-    public void Mutate(int chance, float val)
+    public void Mutate(float chance, float val)
     {
         for (int i = 0; i < biases.Length; i++)
         {
             for (int j = 0; j < biases[i].Length; j++)
             {
-                biases[i][j] = (Random.Range(0f, chance) <= 5) ? biases[i][j] += Random.Range(-val, val) : biases[i][j];
+                biases[i][j] = (Random.Range(0f, 1.0f) <= chance) ? biases[i][j] += Random.Range(-val, val) : biases[i][j];
             }
         }
 
@@ -122,8 +122,7 @@ public class NeuralNetwork : System.IComparable<NeuralNetwork>
             {
                 for (int k = 0; k < weights[i][j].Length; k++)
                 {
-                    weights[i][j][k] = (Random.Range(0f, chance) <= 5) ? weights[i][j][k] += Random.Range(-val, val) : weights[i][j][k];
-
+                    weights[i][j][k] = (Random.Range(0.0f, 1.0f) <= chance) ? weights[i][j][k] += Random.Range(-val, val) : weights[i][j][k];
                 }
             }
         }
