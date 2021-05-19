@@ -19,11 +19,13 @@ public class CarController : MonoBehaviour
 
     public NeuralNetwork Network { get; set; }
 
-    float timeAlive;
-    float totalVelocity;
-    int velocitySamples;
+    float timeAlive = 0f;
+    float totalVelocity = 0f;
+    int velocitySamples = 0;
 
     public bool Collided { get; private set; } = false;
+
+    public bool FinishedCourse { get; private set; } = false;
 
 
 
@@ -37,10 +39,6 @@ public class CarController : MonoBehaviour
         transform.GetChild(transform.childCount - 1).GetComponent<MeshRenderer>().material = aliveMaterial;
 
         rb = GetComponent<Rigidbody>();
-
-        timeAlive = 0f;
-        totalVelocity = 0f;
-        velocitySamples = 0;
     }
 
 
@@ -65,12 +63,22 @@ public class CarController : MonoBehaviour
 
     public void SetFitness()
     {
-        Network.Fitness = (timeAlive * totalVelocity / velocitySamples) / 100;  //Greater fitness is achieved by surviving long and driving fast
+        if (FinishedCourse)
+        {
+            Network.Fitness = 10000 - timeAlive + (totalVelocity / velocitySamples);
+        }
+        else
+        {
+            Network.Fitness = timeAlive + (totalVelocity / velocitySamples);
+        }
     }
 
 
     private void FixedUpdate()
     {
+        if (Network == null)
+            return;
+
         if (!Collided)
         {
             float[] output = Network.FeedForward(GetSensorValues());
@@ -87,6 +95,11 @@ public class CarController : MonoBehaviour
             ++velocitySamples;
 
             SetFitness();
+
+            if (timeAlive >= 5000.0f)
+            {
+                Kill();
+            }
         }
     }
 
@@ -105,6 +118,10 @@ public class CarController : MonoBehaviour
     {
         if (other.gameObject.layer == LayerMask.NameToLayer("CheckPoint"))  // The car finished the course
         {
+            FinishedCourse = true;
+
+            SetFitness();
+
             StartCoroutine(CarsManager.Instance.NextGeneration(true));
         }
     }
@@ -113,12 +130,19 @@ public class CarController : MonoBehaviour
     {
         if (collision.collider.gameObject.layer != LayerMask.NameToLayer("Ground"))
         {
-            Collided = true;
-            GetComponent<MeshRenderer>().material = deadMaterial;
-            transform.GetChild(transform.childCount - 1).GetComponent<MeshRenderer>().material = deadMaterial;
-
-            StartCoroutine(CarsManager.Instance.NextGeneration());
+            Kill();
         }
+    }
+
+    private void Kill()
+    {
+        Collided = true;
+        GetComponent<MeshRenderer>().material = deadMaterial;
+        transform.GetChild(transform.childCount - 1).GetComponent<MeshRenderer>().material = deadMaterial;
+
+        SetFitness();
+
+        StartCoroutine(CarsManager.Instance.NextGeneration());
     }
 
 

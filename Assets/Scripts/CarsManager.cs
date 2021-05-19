@@ -58,29 +58,38 @@ public class CarsManager : MonoBehaviour
             CreateCars();
         }
 
-        NeuralNetwork bestNetwork = GetHighestFitnessCar(0.1f, true).Network;
-        bestNetwork.Visualize();
-        UpdateStatistics(bestNetwork.Generation, bestNetwork.Fitness);
+        CarController bestCar = GetHighestFitnessCar(0.1f, true);
+        if (bestCar != null)
+        {
+            NeuralNetwork bestNetwork = bestCar.Network;
+            bestNetwork.Visualize();
+            UpdateStatistics(bestNetwork.Generation, bestNetwork.Fitness);
+        }
     }
 
     public CarController GetHighestFitnessCar(float threshold = 0f, bool ignoreDead = false)
     {
-        float highestFitness = float.MinValue;
-        int highestFitnessIndex = 0;
-
-        for (int i = 0; i < Networks.Count; i++)
+        if (Cars != null)
         {
-            if (Networks[i].Fitness >= highestFitness + threshold)
-            {
-                if (ignoreDead && CarsManager.Instance.Cars[i].Collided)    //If this car has collided and collided cars should be ignored -> continue
-                    continue;
+            float highestFitness = float.MinValue;
+            int highestFitnessIndex = 0;
 
-                highestFitness = Networks[i].Fitness;
-                highestFitnessIndex = i;
+            for (int i = 0; i < Networks.Count; i++)
+            {
+                if (Networks[i].Fitness >= highestFitness + threshold)
+                {
+                    if (ignoreDead && Cars[i].Collided)    //If this car has collided and collided cars should be ignored -> continue
+                        continue;
+
+                    highestFitness = Networks[i].Fitness;
+                    highestFitnessIndex = i;
+                }
             }
+
+            return Cars[highestFitnessIndex];
         }
 
-        return CarsManager.Instance.Cars[highestFitnessIndex];
+        return null;
     }
 
     private void UpdateStatistics(int gen, float highestFitness)
@@ -92,29 +101,34 @@ public class CarsManager : MonoBehaviour
         if (highestFitness > absoluteBestFitness)
             absoluteBestFitness = highestFitness;
 
-        stats.text = $"Generation: \t{gen}\n" +
-                     $"Highest Fitness: \t{highestFitness}\n" +
+        stats.text = $"Generation: {gen}\n" +
+                     $"Highest Fitness: {highestFitness}\n" +
                      $"\n" +
-                     $"Absolute Highest Fitness: \t{absoluteBestFitness}";
+                     $"Absolute Highest Fitness: {absoluteBestFitness}";
     }
 
-
-    public System.Collections.IEnumerator NextGeneration(bool ignoreAlive = false)
+    bool first = true;
+    public System.Collections.IEnumerator NextGeneration(bool finished = false)
     {
-        if (ignoreAlive == false)
+        if (!finished)
         {
             for (int i = 0; i < genParent.childCount; i++)
             {
-                if (genParent.GetChild(i).GetComponent<CarController>().Collided == false)
+                CarController car = genParent.GetChild(i).GetComponent<CarController>();
+                if (car.Collided == false)
                 {
                     yield break;
                 }
             }
         }
 
-        yield return new WaitForSeconds(2.0f);
-
-        CreateCars();
+        if (first)
+        {
+            first = false;
+            yield return new WaitForSeconds(2.0f);
+            CreateCars();
+            first = true;
+        }
     }
 
 
@@ -124,8 +138,8 @@ public class CarsManager : MonoBehaviour
         for (int i = 0; i < populationSize; i++)
         {
             NeuralNetwork net = new NeuralNetwork(layers);
-            net.Load("Assets/Data/start.txt");
-            //net.Load("Assets/Data/trained.txt"); 
+            //net.Load("Assets/Data/start.txt");
+            net.Load("Assets/Data/trained.txt");
             Networks.Add(net);
         }
     }

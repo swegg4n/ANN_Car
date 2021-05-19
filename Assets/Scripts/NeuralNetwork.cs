@@ -165,49 +165,13 @@ public class NeuralNetwork : System.IComparable<NeuralNetwork>
     }
 
 
-    public void Load(string path)
-    {
-        TextReader tr = new StreamReader(path);
-        int NumberOfLines = (int)new FileInfo(path).Length;
-        string[] ListLines = new string[NumberOfLines];
-        int index = 2;
-        for (int i = 0; i < NumberOfLines; i++)
-        {
-            ListLines[i] = tr.ReadLine();
-        }
-        tr.Close();
-        if (new FileInfo(path).Length > 0)
-        {
-            Generation = int.Parse(ListLines[0]);
-
-            for (int i = 0; i < biases.Length; i++)
-            {
-                for (int j = 0; j < biases[i].Length; j++)
-                {
-                    biases[i][j] = float.Parse(ListLines[index]);
-                    index++;
-                }
-            }
-            for (int i = 0; i < weights.Length; i++)
-            {
-                for (int j = 0; j < weights[i].Length; j++)
-                {
-                    for (int k = 0; k < weights[i][j].Length; k++)
-                    {
-                        weights[i][j][k] = float.Parse(ListLines[index]);
-                        index++;
-                    }
-                }
-            }
-        }
-    }
-
     public void Save(string path)
     {
         File.Create(path).Close();
         StreamWriter writer = new StreamWriter(path, true);
 
         writer.WriteLine(Generation);
+        writer.WriteLine(Fitness);
 
         for (int i = 0; i < biases.Length; i++)
         {
@@ -228,6 +192,45 @@ public class NeuralNetwork : System.IComparable<NeuralNetwork>
             }
         }
         writer.Close();
+    }
+
+    public void Load(string path)
+    {
+        List<string> lines = new List<string>();
+        using (StreamReader sr = new StreamReader(path))
+        {
+            while (sr.Peek() >= 0)
+            {
+                lines.Add(sr.ReadLine());
+            }
+        }
+        string[] linesArr = lines.ToArray();
+        int index = 2;
+
+        if (linesArr.Length > index)
+        {
+            Generation = int.Parse(linesArr[0]);
+
+            for (int i = 0; i < biases.Length; i++)
+            {
+                for (int j = 0; j < biases[i].Length; j++)
+                {
+                    biases[i][j] = float.Parse(linesArr[index]);
+                    index++;
+                }
+            }
+            for (int i = 0; i < weights.Length; i++)
+            {
+                for (int j = 0; j < weights[i].Length; j++)
+                {
+                    for (int k = 0; k < weights[i][j].Length; k++)
+                    {
+                        weights[i][j][k] = float.Parse(linesArr[index]);
+                        index++;
+                    }
+                }
+            }
+        }
     }
 
 
