@@ -14,17 +14,16 @@ public class CarsManager : MonoBehaviour
             Instance = this;
     }
 
-
     [SerializeField] private GameObject prefab;
     [SerializeField] private Transform genParent;
 
-    private int[] layers = new int[] { 5, 3, 1 };
+    private int[] layers = new int[] { 5, 4, 2 };
 
     [SerializeField] private int populationSize = 50;
     [SerializeField] [Range(0.0001f, 1f)] private float MutationChance = 0.01f;
     [SerializeField] [Range(0f, 1f)] private float MutationStrength = 0.5f;
 
-    [SerializeField] [Range(0.1f, 20f)] private float timeScale = 1f;
+    [SerializeField] [Range(0.1f, 50.0f)] private float timeScale = 1.0f;
 
     public List<NeuralNetwork> Networks { get; private set; }
     public List<CarController> Cars { get; private set; }
@@ -35,6 +34,10 @@ public class CarsManager : MonoBehaviour
     public Image NeuronsImage { get { return neuronsImage; } }
     [SerializeField] private Image weightsImage;
     public Image WeightsImage { get { return weightsImage; } }
+
+    [SerializeField] private Text stats;
+
+    private float absoluteBestFitness = 0f;
 
 
     private void Start()
@@ -55,18 +58,23 @@ public class CarsManager : MonoBehaviour
             CreateCars();
         }
 
-        GetHighestFitnessCar().Network.Visualize();
+        NeuralNetwork bestNetwork = GetHighestFitnessCar(0.1f, true).Network;
+        bestNetwork.Visualize();
+        UpdateStatistics(bestNetwork.Generation, bestNetwork.Fitness);
     }
 
-    public CarController GetHighestFitnessCar(float threshold = 0f)
+    public CarController GetHighestFitnessCar(float threshold = 0f, bool ignoreDead = false)
     {
         float highestFitness = float.MinValue;
-        int highestFitnessIndex = -1;
+        int highestFitnessIndex = 0;
 
         for (int i = 0; i < Networks.Count; i++)
         {
             if (Networks[i].Fitness >= highestFitness + threshold)
             {
+                if (ignoreDead && CarsManager.Instance.Cars[i].Collided)    //If this car has collided and collided cars should be ignored -> continue
+                    continue;
+
                 highestFitness = Networks[i].Fitness;
                 highestFitnessIndex = i;
             }
@@ -75,14 +83,32 @@ public class CarsManager : MonoBehaviour
         return CarsManager.Instance.Cars[highestFitnessIndex];
     }
 
-
-    public System.Collections.IEnumerator NextGeneration()
+    private void UpdateStatistics(int gen, float highestFitness)
     {
-        for (int i = 0; i < genParent.childCount; i++)
+        float avgFitness = 0;
+        for (int i = 0; i < Networks.Count; i++)
+            avgFitness += Networks[i].Fitness / Networks.Count;
+
+        if (highestFitness > absoluteBestFitness)
+            absoluteBestFitness = highestFitness;
+
+        stats.text = $"Generation: \t{gen}\n" +
+                     $"Highest Fitness: \t{highestFitness}\n" +
+                     $"\n" +
+                     $"Absolute Highest Fitness: \t{absoluteBestFitness}";
+    }
+
+
+    public System.Collections.IEnumerator NextGeneration(bool ignoreAlive = false)
+    {
+        if (ignoreAlive == false)
         {
-            if (genParent.GetChild(i).GetComponent<CarController>().Collided == false)
+            for (int i = 0; i < genParent.childCount; i++)
             {
-                yield break;
+                if (genParent.GetChild(i).GetComponent<CarController>().Collided == false)
+                {
+                    yield break;
+                }
             }
         }
 
@@ -121,6 +147,7 @@ public class CarsManager : MonoBehaviour
         {
             CarController car = Instantiate(prefab, new Vector3(0.0f, 0.4f, 0.0f), Quaternion.identity, genParent).GetComponent<CarController>();
             car.Network = Networks[i];
+            car.Network.Generation++;
             Cars.Add(car);
         }
     }
@@ -131,9 +158,9 @@ public class CarsManager : MonoBehaviour
             Cars[i].SetFitness();
         Networks.Sort();
 
-        Networks[populationSize - 1].Save("Assets/Data/trained.txt");
+        Networks[populationSize - 1].Save("Assets/Data/trained.txt");   //Saves the best network to file
 
-        for (int i = 0; i < populationSize / 2; i++)
+        for (int i = 0; i < populationSize / 2; i++)    //Mutates the worst half of the generation
         {
             Networks[i] = Networks[i + populationSize / 2].Copy(new NeuralNetwork(layers));
             Networks[i].Mutate(MutationChance, MutationStrength);

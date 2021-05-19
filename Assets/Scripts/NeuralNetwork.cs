@@ -12,8 +12,7 @@ public class NeuralNetwork : System.IComparable<NeuralNetwork>
 
     public float Fitness { get; set; } = 0.0f;
 
-    private const float e = 2.71828f;
-
+    public int Generation { get; set; } = -1;
 
 
     public NeuralNetwork(int[] layers)
@@ -143,6 +142,8 @@ public class NeuralNetwork : System.IComparable<NeuralNetwork>
 
     public NeuralNetwork Copy(NeuralNetwork nn)
     {
+        nn.Generation = Generation;
+
         for (int i = 0; i < biases.Length; i++)
         {
             for (int j = 0; j < biases[i].Length; j++)
@@ -169,14 +170,16 @@ public class NeuralNetwork : System.IComparable<NeuralNetwork>
         TextReader tr = new StreamReader(path);
         int NumberOfLines = (int)new FileInfo(path).Length;
         string[] ListLines = new string[NumberOfLines];
-        int index = 1;
-        for (int i = 1; i < NumberOfLines; i++)
+        int index = 2;
+        for (int i = 0; i < NumberOfLines; i++)
         {
             ListLines[i] = tr.ReadLine();
         }
         tr.Close();
         if (new FileInfo(path).Length > 0)
         {
+            Generation = int.Parse(ListLines[0]);
+
             for (int i = 0; i < biases.Length; i++)
             {
                 for (int j = 0; j < biases[i].Length; j++)
@@ -199,10 +202,12 @@ public class NeuralNetwork : System.IComparable<NeuralNetwork>
         }
     }
 
-    public void Save(string path)//this is used for saving the biases and weights within the network to a file.
+    public void Save(string path)
     {
         File.Create(path).Close();
         StreamWriter writer = new StreamWriter(path, true);
+
+        writer.WriteLine(Generation);
 
         for (int i = 0; i < biases.Length; i++)
         {
@@ -248,8 +253,6 @@ public class NeuralNetwork : System.IComparable<NeuralNetwork>
                         + new Vector2(ann_visual.position.x, ann_visual.position.y);
 
                     neuronPositions[n1][n2] = position;
-
-                    GameObject.Instantiate(neuronsImage, position, Quaternion.identity, ann_visual);
                 }
             }
             for (int i = 0; i < weights.Length; i++)
@@ -258,18 +261,18 @@ public class NeuralNetwork : System.IComparable<NeuralNetwork>
                 {
                     for (int k = 0; k < weights[i][j].Length; k++)
                     {
-                        Vector2 fromNeuron = neuronPositions[i + 1][j];
-                        Vector2 toNeuron = neuronPositions[i][k];
+                        Vector2 fromNeuron = neuronPositions[i][k];
+                        Vector2 toNeuron = neuronPositions[i + 1][j];
 
                         Vector2 position = fromNeuron / 2.0f + toNeuron / 2.0f;
 
                         Transform t = GameObject.Instantiate(weightsImage, position, Quaternion.identity, ann_visual).GetComponent<RectTransform>();
 
                         Vector2 fromToNeuron = toNeuron - fromNeuron;
-                        float rotation = Mathf.Atan2(fromToNeuron.y, fromToNeuron.x);
+                        float rotation = Mathf.Atan2(fromToNeuron.y, fromToNeuron.x) * 180.0f / Mathf.PI;
 
-                        float rt_width = fromNeuron.magnitude;
-                        float rt_height = 5;
+                        float rt_width = fromToNeuron.magnitude;
+                        float rt_height = 3.5f;
                         t.localScale = new Vector2(
                             rt_width / weightsImage.rectTransform.rect.width,
                             rt_height / weightsImage.rectTransform.rect.height);
@@ -278,16 +281,16 @@ public class NeuralNetwork : System.IComparable<NeuralNetwork>
                     }
                 }
             }
+            for (int n1 = 0; n1 < neuronPositions.Length; n1++)
+            {
+                for (int n2 = 0; n2 < neuronPositions[n1].Length; n2++)
+                {
+                    GameObject.Instantiate(neuronsImage, neuronPositions[n1][n2], Quaternion.identity, ann_visual);
+                }
+            }
         }
 
         int c = 0;
-        for (int n1 = 0; n1 < neurons.Length; n1++)
-        {
-            for (int n2 = 0; n2 < neurons[n1].Length; n2++, c++)
-            {
-                ann_visual.GetChild(c).GetComponent<Image>().color = ValueToColor(neurons[n1][n2]);
-            }
-        }
         for (int i = 0; i < weights.Length; i++)
         {
             for (int j = 0; j < weights[i].Length; j++)
@@ -296,6 +299,13 @@ public class NeuralNetwork : System.IComparable<NeuralNetwork>
                 {
                     ann_visual.GetChild(c).GetComponent<Image>().color = ValueToColor(weights[i][j][k]);
                 }
+            }
+        }
+        for (int n1 = 0; n1 < neurons.Length; n1++)
+        {
+            for (int n2 = 0; n2 < neurons[n1].Length; n2++, c++)
+            {
+                ann_visual.GetChild(c).GetComponent<Image>().color = ValueToColor(neurons[n1][n2]);
             }
         }
     }

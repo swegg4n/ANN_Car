@@ -194,6 +194,8 @@ MonoBehaviour:
   sensorMask:
     serializedVersion: 2
     m_Bits: 1
+  aliveMaterial: {fileID: 2100000, guid: 3b718057ab188fa49931f43752f8a103, type: 2}
+  deadMaterial: {fileID: 2100000, guid: 010004d2b9c16e24db8bc16b4d34661d, type: 2}
 --- !u!1 &3854889866331197792
 GameObject:
   m_ObjectHideFlags: 0

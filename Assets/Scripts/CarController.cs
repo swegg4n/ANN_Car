@@ -9,16 +9,19 @@ public class CarController : MonoBehaviour
     private const float SENSOR_RANGE = 5.0f;
     [SerializeField] private LayerMask sensorMask;
 
-    private const float MAX_MOVE_SPEED_FWD = 0.05f;
-    private const float MAX_MOVE_SPEED_BACK = 0.02f;
+    [SerializeField] private Material aliveMaterial;
+    [SerializeField] private Material deadMaterial;
+
+    private const float MAX_MOVE_SPEED = 0.05f;
     private const float MAX_TURN_SPEED = 1.5f;
     private Rigidbody rb;
 
 
     public NeuralNetwork Network { get; set; }
 
-    public int checkpoints { private get; set; } = 1;
-    private Stopwatch stopWatch = new Stopwatch();
+    float timeAlive;
+    float totalVelocity;
+    int velocitySamples;
 
     public bool Collided { get; private set; } = false;
 
@@ -30,9 +33,14 @@ public class CarController : MonoBehaviour
         for (int i = 0; i < sensors.Length; i++)
             sensors[i] = transform.GetChild(i);
 
+        GetComponent<MeshRenderer>().material = aliveMaterial;
+        transform.GetChild(transform.childCount - 1).GetComponent<MeshRenderer>().material = aliveMaterial;
+
         rb = GetComponent<Rigidbody>();
 
-        stopWatch.Restart();
+        timeAlive = 0f;
+        totalVelocity = 0f;
+        velocitySamples = 0;
     }
 
 
@@ -57,7 +65,7 @@ public class CarController : MonoBehaviour
 
     public void SetFitness()
     {
-        Network.Fitness = checkpoints * (float)stopWatch.Elapsed.TotalSeconds;
+        Network.Fitness = (timeAlive * totalVelocity / velocitySamples) / 100;  //Greater fitness is achieved by surviving long and driving fast
     }
 
 
@@ -66,43 +74,52 @@ public class CarController : MonoBehaviour
         if (!Collided)
         {
             float[] output = Network.FeedForward(GetSensorValues());
+            output[0] = (output[0] + 1.0f) * 0.5f;  //Remaps output[0] from [-1,1] to [0,1]
 
-            Move(1.0f);
-            Turn(1.0f, output[0]);
+            //output[0] = "speed"
+            //output[1] = "turning"
+
+            Move(output[0]);
+            Turn(output[1], output[0]);
+
+            timeAlive += Time.deltaTime;
+            totalVelocity += rb.velocity.magnitude / Time.deltaTime;
+            ++velocitySamples;
 
             SetFitness();
         }
     }
 
-    private void Move(float speed)
+    private void Move(float speed)  //speed [0,1]
     {
-        float maxMoveSpeed = (speed > 0) ? MAX_MOVE_SPEED_FWD : MAX_MOVE_SPEED_BACK;
-        rb.MovePosition(transform.position + transform.forward * speed * maxMoveSpeed);
+        rb.MovePosition(transform.position + transform.forward * speed * MAX_MOVE_SPEED);
     }
 
-    public void Turn(float speed, float turning)
+    public void Turn(float turning, float speed)    //turning [-1,1]    speed [0,1]
     {
-        rb.MoveRotation(rb.rotation * Quaternion.AngleAxis(turning * MAX_TURN_SPEED * speed, Vector3.up));
+        rb.MoveRotation(rb.rotation * Quaternion.AngleAxis(turning * MAX_TURN_SPEED * (1.0f - speed), Vector3.up));
     }
+
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.gameObject.layer == LayerMask.NameToLayer("CheckPoint"))
+        if (other.gameObject.layer == LayerMask.NameToLayer("CheckPoint"))  // The car finished the course
         {
-            ++checkpoints;
+            StartCoroutine(CarsManager.Instance.NextGeneration(true));
         }
     }
-
 
     private void OnCollisionEnter(Collision collision)
     {
         if (collision.collider.gameObject.layer != LayerMask.NameToLayer("Ground"))
         {
             Collided = true;
+            GetComponent<MeshRenderer>().material = deadMaterial;
+            transform.GetChild(transform.childCount - 1).GetComponent<MeshRenderer>().material = deadMaterial;
+
             StartCoroutine(CarsManager.Instance.NextGeneration());
         }
     }
-
 
 
     private void OnDrawGizmos()

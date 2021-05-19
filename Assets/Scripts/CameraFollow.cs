@@ -6,7 +6,7 @@ public class CameraFollow : MonoBehaviour
 
     private void LateUpdate()
     {
-        CarController carToFollow = CarsManager.Instance.GetHighestFitnessCar(0.1f);
+        CarController carToFollow = CarsManager.Instance.GetHighestFitnessCar(0.1f, true);
 
         Vector3 offset = carToFollow.GetComponent<Rigidbody>().velocity * offsetDistance;
         Vector3 target = new Vector3(carToFollow.transform.position.x, transform.position.y, carToFollow.transform.position.z) + offset;
