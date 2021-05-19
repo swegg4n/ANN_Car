@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class CarsManager : MonoBehaviour
 {
@@ -28,6 +29,12 @@ public class CarsManager : MonoBehaviour
     public List<NeuralNetwork> Networks { get; private set; }
     public List<CarController> Cars { get; private set; }
 
+    [SerializeField] private RectTransform ann_visual;
+    public RectTransform Ann_visual { get { return ann_visual; } }
+    [SerializeField] private Image neuronsImage;
+    public Image NeuronsImage { get { return neuronsImage; } }
+    [SerializeField] private Image weightsImage;
+    public Image WeightsImage { get { return weightsImage; } }
 
 
     private void Start()
@@ -47,6 +54,25 @@ public class CarsManager : MonoBehaviour
         {
             CreateCars();
         }
+
+        GetHighestFitnessCar().Network.Visualize();
+    }
+
+    public CarController GetHighestFitnessCar(float threshold = 0f)
+    {
+        float highestFitness = float.MinValue;
+        int highestFitnessIndex = -1;
+
+        for (int i = 0; i < Networks.Count; i++)
+        {
+            if (Networks[i].Fitness >= highestFitness + threshold)
+            {
+                highestFitness = Networks[i].Fitness;
+                highestFitnessIndex = i;
+            }
+        }
+
+        return CarsManager.Instance.Cars[highestFitnessIndex];
     }
 
 

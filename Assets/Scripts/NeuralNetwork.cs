@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class NeuralNetwork : System.IComparable<NeuralNetwork>
 {
@@ -91,7 +92,6 @@ public class NeuralNetwork : System.IComparable<NeuralNetwork>
         }
         for (int i = 1; i < layers.Length; i++)
         {
-            int layer = i - 1;
             for (int j = 0; j < neurons[i].Length; j++)
             {
                 float value = 0f;
@@ -223,6 +223,80 @@ public class NeuralNetwork : System.IComparable<NeuralNetwork>
             }
         }
         writer.Close();
+    }
+
+
+    public void Visualize()
+    {
+        RectTransform ann_visual = CarsManager.Instance.Ann_visual;
+
+        Image neuronsImage = CarsManager.Instance.NeuronsImage;
+        Image weightsImage = CarsManager.Instance.WeightsImage;
+
+        Vector2[][] neuronPositions = new Vector2[neurons.Length][];
+
+        if (ann_visual.childCount == 0)
+        {
+            for (int n1 = 0; n1 < neurons.Length; n1++)
+            {
+                neuronPositions[n1] = new Vector2[neurons[n1].Length];
+                for (int n2 = 0; n2 < neurons[n1].Length; n2++)
+                {
+                    Vector2 position = new Vector2(
+                        ann_visual.rect.xMin + ann_visual.rect.width * (n1 + 1) / (neurons.Length + 1),
+                        ann_visual.rect.yMax - ann_visual.rect.height * (n2 + 1) / (neurons[n1].Length + 1))
+                        + new Vector2(ann_visual.position.x, ann_visual.position.y);
+
+                    neuronPositions[n1][n2] = position;
+
+                    GameObject.Instantiate(neuronsImage, position, Quaternion.identity, ann_visual);
+                }
+            }
+            for (int i = 0; i < weights.Length; i++)
+            {
+                for (int j = 0; j < weights[i].Length; j++)
+                {
+                    for (int k = 0; k < weights[i][j].Length; k++)
+                    {
+                        Vector2 position = neuronPositions[i + 1][j];
+
+                        //GameObject.Instantiate(weightsImage, position, Quaternion.identity, ann_visual);
+                    }
+                }
+            }
+        }
+
+        int c = 0;
+        for (int n1 = 0; n1 < neurons.Length; n1++)
+        {
+            for (int n2 = 0; n2 < neurons[n1].Length; n2++, c++)
+            {
+                ann_visual.GetChild(c).GetComponent<Image>().color = ValueToColor(neurons[n1][n2]);
+            }
+        }
+        for (int i = 0; i < weights.Length; i++)
+        {
+            for (int j = 0; j < weights[i].Length; j++)
+            {
+                for (int k = 0; k < weights[i][j].Length; k++, c++)
+                {
+                    //ann_visual.GetChild(c).GetComponent<Image>().color = ValueToColor(weights[i][j][k]);
+                }
+            }
+        }
+    }
+
+    //Black: (0,0,0)  Green: (0,1,0)  Red: (1,0,0)
+    private Color ValueToColor(float value)
+    {
+        if (value >= 0f) //Green [0,1]
+        {
+            return new Color(0f, value, 0f);
+        }
+        else //Red [-1,0[
+        {
+            return new Color(-value, 0f, 0f);
+        }
     }
 
 }

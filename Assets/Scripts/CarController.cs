@@ -15,7 +15,7 @@ public class CarController : MonoBehaviour
     private Rigidbody rb;
 
 
-    public NeuralNetwork Network { private get; set; }
+    public NeuralNetwork Network { get; set; }
 
     public int checkpoints { private get; set; } = 1;
     private Stopwatch stopWatch = new Stopwatch();
