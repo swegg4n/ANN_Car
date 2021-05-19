@@ -258,9 +258,23 @@ public class NeuralNetwork : System.IComparable<NeuralNetwork>
                 {
                     for (int k = 0; k < weights[i][j].Length; k++)
                     {
-                        Vector2 position = neuronPositions[i + 1][j];
+                        Vector2 fromNeuron = neuronPositions[i + 1][j];
+                        Vector2 toNeuron = neuronPositions[i][k];
 
-                        //GameObject.Instantiate(weightsImage, position, Quaternion.identity, ann_visual);
+                        Vector2 position = fromNeuron / 2.0f + toNeuron / 2.0f;
+
+                        Transform t = GameObject.Instantiate(weightsImage, position, Quaternion.identity, ann_visual).GetComponent<RectTransform>();
+
+                        Vector2 fromToNeuron = toNeuron - fromNeuron;
+                        float rotation = Mathf.Atan2(fromToNeuron.y, fromToNeuron.x);
+
+                        float rt_width = fromNeuron.magnitude;
+                        float rt_height = 5;
+                        t.localScale = new Vector2(
+                            rt_width / weightsImage.rectTransform.rect.width,
+                            rt_height / weightsImage.rectTransform.rect.height);
+
+                        t.rotation = Quaternion.Euler(0f, 0f, rotation);
                     }
                 }
             }
@@ -280,7 +294,7 @@ public class NeuralNetwork : System.IComparable<NeuralNetwork>
             {
                 for (int k = 0; k < weights[i][j].Length; k++, c++)
                 {
-                    //ann_visual.GetChild(c).GetComponent<Image>().color = ValueToColor(weights[i][j][k]);
+                    ann_visual.GetChild(c).GetComponent<Image>().color = ValueToColor(weights[i][j][k]);
                 }
             }
         }
