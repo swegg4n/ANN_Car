@@ -342,8 +342,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   prefab: {fileID: 3854889866068852648, guid: e6c58a1cf7162d441a35273d63f8a324, type: 3}
   genParent: {fileID: 624477346}
-  populationSize: 20
-  MutationChance: 1
+  populationSize: 30
+  MutationChance: 0.7
   MutationStrength: 0.3
   timeScale: 50
   ann_visual: {fileID: 1454114694}
